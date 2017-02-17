@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"time"
 )
 
 var cfgFile string
@@ -65,21 +66,24 @@ func fileIo(paths chan string, c chan result) {
 	for path := range paths { // filenamepaths
 		fileinfo, err := os.Lstat(path)
 		if err != nil {
-			fmt.Println("读取%v信息错误，err:%v", path, err)
+			fmt.Printf("读取%v信息错误，err:%v", path, err)
 			continue
 		}
 		f, err := os.Open(path)
 		if err != nil {
-			fmt.Println("open %v err: %v", path, err)
+			fmt.Printf("open %v err: %v\n", path, err)
+			f.Close()
 			continue
 		}
-		defer f.Close()
+
 		h := sha1.New()
 		_, err1 := io.Copy(h, f)
 		if err1 != nil {
-			fmt.Println("io.copy err: %v", err1)
+			fmt.Printf("io.copy err: %v", err1)
+			f.Close()
 			continue
 		}
+		f.Close()
 		select {
 		case c <- result{path, h, fileinfo.Size()}:
 		}
@@ -95,7 +99,7 @@ func Sha1(c chan result, l chan string) {
 	}
 }
 
-func Sha1All(root string) (chan string, error) {
+func Sha1All(root string) (chan string, chan error) {
 	paths, errc := walkFiles(root)
 
 	// Start a fixed number of goroutines to read and digest files.
@@ -133,11 +137,7 @@ func Sha1All(root string) (chan string, error) {
 		close(l)
 	}()
 
-	// Check whether the Walk failed.
-	if err := <-errc; err != nil { // HLerrc
-		return nil, err
-	}
-	return l, nil
+	return l, errc
 }
 
 // RootCmd represents the base command when called without any subcommands
@@ -155,19 +155,22 @@ var RootCmd = &cobra.Command{
 		}
 
 		f, err1 := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+		defer f.Close()
 		if err1 != nil {
 			panic(err1)
 		}
-		defer f.Close()
 
+		fmt.Println("计算sha1开始", time.Now().Format("2006-01-02 15:04:05"))
 		l, err2 := Sha1All(input)
-		if err2 != nil {
-			fmt.Println(err2)
-			return
-		}
 		for line := range l {
 			f.WriteString(line)
 		}
+		// Check whether the Walk failed.
+		if err := <-err2; err != nil { // HLerrc
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("计算sha1结束", time.Now().Format("2006-01-02 15:04:05"))
 	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
