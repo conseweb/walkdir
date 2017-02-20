@@ -2,7 +2,9 @@ package dthash
 
 import (
 	"fmt"
+	"os"
 	"testing"
+	"time"
 )
 
 func TestWalkFiles(t *testing.T) {
@@ -45,12 +47,64 @@ func TestSha1All(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	Execute()
+	input := "/"
+	output := "/home/zhaolong/temp/dthash"
+	fi, err1 := os.Lstat(input)
+	if err1 != nil {
+		panic(err1)
+	}
+	if !fi.IsDir() {
+		panic(fmt.Sprintf("%v不是目录", input))
+	}
+
+	f, err1 := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	defer f.Close()
+	if err1 != nil {
+		panic(err1)
+	}
+
+	fmt.Println("计算sha1开始", time.Now().String())
+	l, err2 := Sha1All(input)
+	for line := range l {
+		f.WriteString(line)
+	}
+	// Check whether the Walk failed.
+	if err := <-err2; err != nil { // HLerrc
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("计算sha1结束", time.Now().String())
 }
 
 func BenchmarkExecute(b *testing.B) {
 	fmt.Println("B.N =", b.N)
 	for i := 0; i < b.N; i++ {
-		Execute()
+		input := "/"
+		output := "/home/zhaolong/temp/dthash"
+		fi, err1 := os.Lstat(input)
+		if err1 != nil {
+			panic(err1)
+		}
+		if !fi.IsDir() {
+			panic(fmt.Sprintf("%v不是目录", input))
+		}
+
+		f, err1 := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+		defer f.Close()
+		if err1 != nil {
+			panic(err1)
+		}
+
+		fmt.Println("计算sha1开始", time.Now().String())
+		l, err2 := Sha1All(input)
+		for line := range l {
+			f.WriteString(line)
+		}
+		// Check whether the Walk failed.
+		if err := <-err2; err != nil { // HLerrc
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("计算sha1结束", time.Now().String())
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sync"
 )
 
@@ -24,6 +25,12 @@ func walkFiles(root string) (chan string, chan error) {
 			if !info.Mode().IsRegular() {
 				return nil
 			}
+
+			match, _ := regexp.MatchString("^/proc/.*|^/sys/.*|^/run/.*", path)
+			if match {
+				return nil
+			}
+
 			select {
 			case paths <- path:
 			}
