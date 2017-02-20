@@ -3,13 +3,33 @@ package dthash
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 )
 
 func TestWalkFiles(t *testing.T) {
-	input := "/home/zhaolong/temp/input"
-	walkFiles(input)
+	root := "/"
+	fmt.Println("walkFiles开始", time.Now().String())
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		match, _ := regexp.MatchString("^/proc/.*|^/sys/.*|^/run/.*", path)
+		if match {
+			return nil
+		}
+
+		//fmt.Println(path)
+
+		return nil
+	})
+	fmt.Println("walkFiles结束", time.Now().String())
 }
 
 func TestFileIo(t *testing.T) {
