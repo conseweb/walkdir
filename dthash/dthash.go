@@ -80,7 +80,7 @@ func fileIo(paths chan string, c chan result) {
 	fmt.Println("fileIo结束", time.Now().String())
 }
 
-func Sha1(c chan result, l chan string) {
+func sha1File(c chan result, l chan string) {
 	fmt.Println("Sha1开始", time.Now().String())
 	for result := range c { //io数据
 		line := fmt.Sprintf("%v,%x,%v\n", result.path, result.digest.Sum(nil), result.size)
@@ -120,7 +120,7 @@ func Sha1All(root string) (chan string, chan error) {
 	wgSha1.Add(numSha1s)
 	for i := 0; i < numSha1s; i++ {
 		go func() {
-			Sha1(c, l)
+			sha1File(c, l)
 			wgSha1.Done()
 		}()
 	}

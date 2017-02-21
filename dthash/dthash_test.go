@@ -33,42 +33,98 @@ func TestWalkFiles(t *testing.T) {
 }
 
 func TestFileIo(t *testing.T) {
-	path := make(chan string, 100)
+	root := "/"
+	paths := make(chan string, 100)
 	c := make(chan result, 100) //c中存放的是未经计算的io数据
-	path <- "/home/zhaolong/temp/input/a.txt"
-	path <- "/home/zhaolong/temp/input/b.txt"
-	path <- "/home/zhaolong/temp/input/sub/c.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/d.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/sub2/e.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/sub2/sub3/f.txt"
-	close(path)
-	fileIo(path, c)
+	go func() {
+		// Close the paths channel after Walk returns.
+		defer close(paths)
+		// No select needed for this send, since errc is buffered.
+		fmt.Println("walkFiles开始", time.Now().String())
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
+			match, _ := regexp.MatchString("^/proc/.*|^/sys/.*|^/run/.*", path)
+			if match {
+				return nil
+			}
+
+			select {
+			case paths <- path:
+			}
+			return nil
+		})
+		fmt.Println("walkFiles结束", time.Now().String())
+	}()
+
+	go func() {
+		fileIo(paths, c)
+		close(c)
+	}()
+	for _ = range c {
+
+	}
+
 }
 
 func TestSha1(t *testing.T) {
-	path := make(chan string, 100)
 	c := make(chan result, 100) //c中存放的是未经计算的io数据
 	l := make(chan string, 100) //l中存放的是最终文件每行的内容
-	path <- "/home/zhaolong/temp/input/a.txt"
-	path <- "/home/zhaolong/temp/input/b.txt"
-	path <- "/home/zhaolong/temp/input/sub/c.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/d.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/sub2/e.txt"
-	path <- "/home/zhaolong/temp/input/sub/sub1/sub2/sub3/f.txt"
-	close(path)
-	fileIo(path, c)
-	close(c)
-	Sha1(c, l)
+	root := "/"
+	paths := make(chan string, 100)
+	go func() {
+		// Close the paths channel after Walk returns.
+		defer close(paths)
+		// No select needed for this send, since errc is buffered.
+		fmt.Println("walkFiles开始", time.Now().String())
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
+			match, _ := regexp.MatchString("^/proc/.*|^/sys/.*|^/run/.*", path)
+			if match {
+				return nil
+			}
+
+			select {
+			case paths <- path:
+			}
+			return nil
+		})
+		fmt.Println("walkFiles结束", time.Now().String())
+	}()
+
+	go func() {
+		fileIo(paths, c)
+		close(c)
+	}()
+	go func() {
+		sha1File(c, l)
+		close(l)
+	}()
+
+	for _ = range l {
+
+	}
 }
 
 func TestSha1All(t *testing.T) {
-	input := "/home/zhaolong/temp/input"
+	input := "/"
 	Sha1All(input)
 }
 
 func TestExecute(t *testing.T) {
 	input := "/"
-	output := "/home/zhaolong/temp/dthash"
+	output := "/home/dthash"
 	fi, err1 := os.Lstat(input)
 	if err1 != nil {
 		panic(err1)
@@ -100,7 +156,7 @@ func BenchmarkExecute(b *testing.B) {
 	fmt.Println("B.N =", b.N)
 	for i := 0; i < b.N; i++ {
 		input := "/"
-		output := "/home/zhaolong/temp/dthash"
+		output := "/home/dthash"
 		fi, err1 := os.Lstat(input)
 		if err1 != nil {
 			panic(err1)

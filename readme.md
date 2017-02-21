@@ -9,7 +9,7 @@ $ make  # 编译二进制
 
 # 调用 :
 在dthash工具项目所在根目录执行
-    ./build/dthash --input=yourdirectory --output=yourresultfile
+    sudo ./build/dthash --input=yourdirectory --output=yourresultfile
     input是所要处理(生成目录树哈希)的目录
     output是生成目录树的结果文件
 
