@@ -15,7 +15,7 @@
 package main
 
 import (
-	"dthash/cmd"
+	"walkdir/cmd"
 )
 
 func main() {
