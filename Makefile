@@ -5,7 +5,7 @@ NAME=dthash
 
 build: build_dir
 		go build -ldflags "-s -w" \
-		-o build/$(NAME) walkdir
+		-o build/$(NAME) ./
 
 build_dir:
 	@mkdir -p build
