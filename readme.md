@@ -18,5 +18,10 @@ $ make  # 编译二进制
 每行字段含义按顺序分别是:
 文件名,文件的sha1哈希值,文件大小(byte)
 
+#测试
+     1.使用docker统一测试环境
+     2.利用docker/Dockerfile生成测试环境镜像
+     3.sh docker/container/dthash.sh 生成测试环境容器
+     4.在测试环境容器中，$GOPATH下找到walkdir工程进行测试
 
 
